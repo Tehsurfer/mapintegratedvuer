@@ -22,6 +22,7 @@
     "@abi-software/flatmapvuer": "^0.1.26",
     "@abi-software/maptooltip": "^0.1.10",
     "@abi-software/scaffoldvuer": "^0.1.38",
+    "@tehsurfer/map-side-bar": "0.0.1",
     "@tehsurfer/plotvuer": "^0.2.21",
     "@tehsurfer/vue-tour": "^1.3.4",
     "core-js": "^3.3.2",

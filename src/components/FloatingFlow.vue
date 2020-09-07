@@ -26,7 +26,8 @@
 /* eslint-disable no-alert, no-console */
 import DialogToolbarContent from './DialogToolbarContent';
 import FloatingDialog from './FloatingDialog';
-import SideBar from './SideBar';
+import '@tehsurfer/map-side-bar'
+import '@tehsurfer/map-side-bar/dist/map-side-bar.css';
 import EventBus from './EventBus';
 import Vue from "vue";
 import {
@@ -76,7 +77,6 @@ export default {
   components: {
     DialogToolbarContent,
     FloatingDialog,
-    SideBar
   },
   methods: {
     onFlowChange: function(action) {
