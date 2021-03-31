@@ -150,13 +150,14 @@ export default {
         }
       }
     },
-    cascadeEvent: function(event){
+    cascadeEvent: async function(event){
       // If filters have been cleared, send an empty object
       if(event[0] === undefined){
        this.$emit("filterResults", {});
        this.updateLabels([0,0,0]) // reset label counts
        return
       }
+      this.setAllToEnabled()
       this.filters = []
       // Label counts is used to show user how many are at each nested level.
       //    i.e.: if 3 species are selected it will show 'Species (3)' in the cascader
@@ -168,6 +169,18 @@ export default {
             if(event[k] !== undefined){
               var id = event[k][1]
               if(this.options[i].children[j].value == id){
+                // Disable coloumn of options is 'All' is clicked
+                if(this.options[i].children[j].label.includes('All')){
+                  for(let l = 1; l < this.options[i].children.length; l++){
+                    this.options[i].children[l].disabled = true
+                    for(let m in this.cascadeSelected){
+                      if(this.cascadeSelected[m][1] === this.options[i].children[l].value){
+                        // Unfortunately the line below does not do anything
+                        // this.cascadeSelected.splice(m,1)
+                      }
+                    }
+                  }
+                } 
                 let output = {}
                 output.facet = this.switchFacetToRequest(this.options[i].children[j].label)
                 output.term = this.switchTermToRequest(this.options[i].label)
@@ -181,6 +194,24 @@ export default {
       this.updateLabels(labelCounts)
       this.$emit("filterResults", this.filters);
     },
+    setAllToEnabled: function(){
+      return new Promise(resolve => {
+        for(let i in this.options){
+          for(let j in this.options[i].children){
+            this.options[i].children[j].disabled = false
+          }
+        }
+        resolve()
+      })
+    },
+    // disableFacetsIfAllSelected: function(children){
+    //   if(children[0].)
+    //   for(let l in children){
+    //     if(options[i].children[j].label.includes('All')){
+    //       options[i].children[l].disabled = true
+    //   }
+    //   }
+    // },
     numberShownChanged: function (event){
       this.$emit("numberPerPage", event);
     },
