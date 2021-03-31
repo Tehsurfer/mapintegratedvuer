@@ -31,6 +31,7 @@
             ></el-input>
             <el-button class="button" @click="searchEvent">Search</el-button>
           </div>
+          <context-card></context-card>
           <SearchFilters class="filters" ref="filtersRef" :entry="filterEntry" @filterResults="filterUpdate" @numberPerPage="numberPerPageUpdate"></SearchFilters>
           <div class="content scrollbar"  v-loading="loadingCards" ref="content">
             <div class="error-feedback" v-if="results.length === 0 && !loadingCards && !sciCrunchError">
@@ -77,6 +78,7 @@ import lang from "element-ui/lib/locale/lang/en";
 import locale from "element-ui/lib/locale";
 import SearchFilters from "./SearchFilters";
 import DatasetCard from "./DatasetCard";
+import ContextCard from "./ContextCard";
 import EventBus from './EventBus';
 import store from '../store';
 
@@ -123,7 +125,7 @@ var initial_state = {
 }
 
 export default {
-  components: { SearchFilters, DatasetCard },
+  components: { SearchFilters, DatasetCard, ContextCard },
   name: "SideBar",
   props: {
     visible: {
@@ -381,6 +383,8 @@ export default {
   cursor: pointer;
   pointer-events: auto;
 }
+
+
 
 .button{
   background-color: #8300bf;
