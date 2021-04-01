@@ -6,6 +6,10 @@
                 <div class="card-right">
                   <div>ICN Scaffold</div>
                   <div>Points are mapped to their positions on a 3d heart that is mapped to the data.</div>
+                  <br/>
+                  <span><img src="https://image.prntscr.com/image/DO_ZZXl7RtOXgVDv-Vw6yA.png" style="height: 20px;"> Data type 1</span>
+                  <br/>
+                  <span><img src="https://image.prntscr.com/image/tsnuRyFZTbmYfSjrMHTK8w.png" style="height: 27px;"> Data type 2</span>
                 </div>
     </el-card>
   </div>

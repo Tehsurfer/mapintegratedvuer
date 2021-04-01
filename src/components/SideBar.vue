@@ -268,10 +268,10 @@ export default {
               ? [...new Set(element.samples.map((v) => v.sex.value))]
               : undefined
             : undefined, // This processing only includes each gender once into 'sexes'
-          organs: element.organs
+          organs: element.organs?.length
             ? [...new Set(element.organs.map((v) => v.name))]
             : undefined,
-          ages: element.samples
+          ages: element.samples?.length
             ? "ageCategory" in element.samples[0]
               ? [...new Set(element.samples.map((v) => v.ageCategory.value))]
               : undefined

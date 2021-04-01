@@ -20,6 +20,7 @@
       :plotType="entry.plotType" :helpMode="helpMode" style="overflow: hidden"></PlotVuer>
       <SideBar v-else-if="entry.type === 'Search'" :visbility="true" :isDrawer="false"  :entry="entry.entry" class="search"></SideBar>
       <IframeVuer v-else-if="entry.type === 'Iframe'" :url="entry.resource" />
+      
     </div>
   </div>
 </template>
