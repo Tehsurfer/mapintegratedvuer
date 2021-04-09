@@ -79,6 +79,7 @@ import SearchFilters from "./SearchFilters";
 import DatasetCard from "./DatasetCard";
 import EventBus from './EventBus';
 import store from '../store';
+import simulationResults from './scicrunch-simulation-results'
 
 locale.use(lang);
 Vue.use(Link);
@@ -251,23 +252,10 @@ export default {
       // referenced by SciCrunch.
       this.results = [];
       let id = 0;
-      this.results.push({
-        description: "Computational analysis of the human sinus node action potential: model development and effects of mutations",
-        contributors: [{name: "Fabbri, Alan"}, {name: "Fantini, Matteo"}, {name: "Wilders, Ronald"}, {name: "Severi, Stefano"}],
-        numberSamples: 0,
-        sexes: undefined,
-        organs: ["heart"],
-        ages: undefined,
-        updated: undefined,
-        url: {uri: "https://models.physiomeproject.org/e/611/HumanSAN_Fabbri_Fantini_Wilders_Severi_2017.cellml/view"},
-        datasetId: undefined,
-        csvFiles: undefined,
-        id: id++,
-        doi: "https://doi.org/10.1113/jp273259",
-        scaffold: false,
-        scaffolds: false,
-        simulation: true
-      });
+      for (let el of simulationResults){
+        this.results.push(el)
+        id++
+      }
       // Add the entries retrieved from SciCrunch.
       this.lastSearch = this.searchInput
       this.numberOfHits = data.numberOfHits;
@@ -286,7 +274,7 @@ export default {
               ? [...new Set(element.samples.map((v) => v.sex.value))]
               : undefined
             : undefined, // This processing only includes each gender once into 'sexes'
-          organs: element.organs
+          organs: element.organs?.length
             ? [...new Set(element.organs.map((v) => v.name))]
             : undefined,
           ages: element.samples
