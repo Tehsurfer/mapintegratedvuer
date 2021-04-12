@@ -18,7 +18,8 @@
         :render="entry.mode !== 'minimised'" :displayMinimap=false :displayMarkers=false />
       <PlotVuer v-else-if="entry.type === 'Plot'" :url="entry.resource"
         :plotType="entry.plotType" :helpMode="helpMode" style="overflow: hidden"></PlotVuer>
-      <SimulationVuer v-else-if="entry.type === 'Simulation'"></SimulationVuer>
+      <SimulationVuer v-else-if="entry.type === 'Simulation'" :compositeEntry="entry.entry" @compositeOutput="compositeOutput"/>
+      <CompositeModel v-else-if="entry.type === 'CompositeModel'" :entry="entry.entry"/>
       <SideBar v-else-if="entry.type === 'Search'" :visbility="true" :isDrawer="false"  :entry="entry.entry" class="search"></SideBar>
       <IframeVuer v-else-if="entry.type === 'Iframe'" :url="entry.resource" />
     </div>
@@ -39,7 +40,7 @@ import '@abi-software/scaffoldvuer/dist/scaffoldvuer.css';
 import { PlotVuer } from '@abi-software/plotvuer';
 import '@abi-software/plotvuer/dist/plotvuer.css';
 import { getInteractiveAction } from './SimulatedData.js';
-import { SimulationVuer } from '@abi-software/simulationvuer';
+import { SimulationVuer, CompositeModel } from '@abi-software/simulationvuer';
 import '@abi-software/simulationvuer/dist/simulationvuer.css';
 import store from '../store';
 
@@ -61,6 +62,7 @@ export default {
     ScaffoldVuer,
     PlotVuer,
     SimulationVuer,
+    CompositeModel
   },
   methods: {
     onResize: function () {
@@ -118,7 +120,10 @@ export default {
       window.removeEventListener("mousedown", this.endHelp)
       this.helpMode = false;
       setTimeout(()=>{this.isInHelp = undefined}, 200);
-    }
+    },
+    compositeOutput: function(output){
+      EventBus.$emit('simulationViewerUpdate', output)
+    },
   },
   data: function() {
     return {
@@ -128,7 +133,19 @@ export default {
         width: "100%",
         bottom: "0px",
       },
-      helpMode: false
+      helpMode: false,
+      compositeEntries: [{
+        id: 0,
+        open: true,
+        status: 'single'
+      },{
+        id: 1,
+        open: true,
+        status: 'single'
+      }],
+      
+      compositeData: [{},{}],
+      compEntry: {}
     }
   },
   created: function() {

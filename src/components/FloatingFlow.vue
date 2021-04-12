@@ -46,6 +46,7 @@ var initialState = function() {
     dockedArray: [{title: "Flatmap", id:1}, ],
     activeDockedId: 1,
     currentCount: 1,
+    compositeOrder: [],
     entries: [
       {
         resource: "Rat",
@@ -109,6 +110,9 @@ export default {
       Object.assign(newEntry, data);
       newEntry.mode = "normal";
       newEntry.id = ++this.currentCount;
+      if(newEntry.entry.id !== undefined){
+        newEntry.entry.id = newEntry.id
+      }
       newEntry.zIndex = ++this.zIndex;
       newEntry.state = undefined;
       this.entries.push(newEntry);
@@ -249,7 +253,44 @@ export default {
     },
     flatmapChanged: function(){
       this.$emit("flatmapChanged");
-    }
+    },
+    simUpdate: function(update){
+      console.log('in sim update')
+      for(let i in this.entries){
+        if (this.entries[i].type === "Simulation"){
+          console.log('found simvuer')
+          this.entries[i].entry.status = update.status
+        }
+        
+      }
+      this.compositeOrder.push(update)
+      if(update.status === 'linked'){
+        setTimeout(()=>{
+          this.switchToComposite()
+        }, 1000)
+      }
+    },
+    switchToComposite: function(){
+      this.compEntry = this.compositeOrder
+      window.compEntry = this.compEntry
+      window.entriesss = this.entries
+      for(let i in this.entries){
+        for(let j in this.compositeOrder){
+          if(this.entries[i].id === this.compositeOrder[j].id){
+            console.log('deleting dailogue')
+            this.undockDialog(this.compositeOrder[j].id);
+            this.destroyDialog(this.compositeOrder[j].id);
+          }
+        }
+      }
+      let entry = {
+        type: 'CompositeModel',
+        entry: this.compEntry
+      }
+      this.createNewEntry(entry)
+      this.compositeOrder = []
+
+    },
   },
   data: function() {
     return initialState();
@@ -273,6 +314,10 @@ export default {
     EventBus.$on("PopoverActionClick", (payLoad) => {
       this.actionClick(payLoad);
     });
+    EventBus.$on("simulationViewerUpdate", (payLoad) => {
+      this.simUpdate(payLoad);
+    });
+
   }
 };
 </script>

@@ -113,7 +113,12 @@ export default {
           label: "Fabbri et al.",
           resource: undefined,
           title: "View simulation",
-          type: "Simulation"
+          type: "Simulation",
+          entry: {
+            id: 0,
+            open: true,
+            status: 'single'
+          }
         }
         EventBus.$emit("PopoverActionClick", action)
     },
