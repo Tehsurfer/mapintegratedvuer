@@ -146,6 +146,12 @@ export default {
         result.eventType = "selected";
         fireResourceSelected = true;
         action = "search";
+        if (resource[0].data.group && resource[0].data.group !=="" && !resource[0].data.group.includes("root")) {
+          returnedAction = {
+            type: "Search",
+            term: resource[0].data.group,
+          };
+        }
       }
       if (returnedAction === undefined)
         returnedAction = getInteractiveAction(result, action);
