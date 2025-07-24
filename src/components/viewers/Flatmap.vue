@@ -1,44 +1,9 @@
 <template>
   <div class="viewer-container">
-    <FlatmapVuer
-      :state="entry.state"
-      :entry="entry.resource"
-      :mapManager="mapManager"
-      @resource-selected="flatmaprResourceSelected(entry.type, $event)"
-      @pan-zoom-callback="flatmapPanZoomCallback"
-      :name="entry.resource"
-      style="height: 100%; width: 100%"
-      :minZoom="entry.minZoom"
-      :helpMode="helpMode"
-      :helpModeActiveItem="helpModeActiveItem"
-      :helpModeInitialIndex="-1"
-      :helpModeDialog="useHelpModeDialog"
-      @help-mode-last-item="onHelpModeLastItem"
-      @shown-tooltip="onTooltipShown"
-      @shown-map-tooltip="onMapTooltipShown"
-      @annotation-open="onAnnotationOpen"
-      @annotation-close="onAnnotationClose"
-      @update-offline-annotation-enabled="updateOfflineAnnotationEnabled"
-      :annotationSidebar="annotationSidebar"
-      @connectivity-info-open="onConnectivityInfoOpen"
-      @connectivity-error="onConnectivityError"
-      @connectivity-info-close="onConnectivityInfoClose"
-      :connectivityInfoSidebar="connectivityInfoSidebar"
-      :pathControls="true"
-      ref="flatmap"
-      @ready="flatmapReadyCall"
-      :displayMinimap="false"
-      :displayWarning="true"
-      :enableOpenMapUI="true"
-      :flatmapAPI="flatmapAPI"
-      :sparcAPI="apiLocation"
-      :showLocalSettings="showLocalSettings"
-      :showOpenMapButton="showOpenMapButton"
-      @open-map="openMap"
-      @pathway-selection-changed="onPathwaySelectionChanged"
-      @mapmanager-loaded="onMapmanagerLoaded"
-      :showPathwayFilter="false"
-    />
+    HELOLOLOLO
+    KASDFASD
+    HLEOELEHLOE
+    HELO
 
     <HelpModeDialog
       v-if="helpMode && useHelpModeDialog"
@@ -73,24 +38,23 @@ export default {
   },
   data: function () {
     return {
-      flatmapReady: false,
+      flatmapReady: true,
     }
   },
   methods: {
     getState: function () {
-      return this.$refs.flatmap.getState();
+      return {}
     },
     /**
      * Perform a local search on this contentvuer
      */
     search: function (term) {
-      return this.$refs.flatmap.searchAndShowResult(term, true);
+      return false
     },
     getFlatmapImp() {
-      return this.$refs.flatmap?.mapImp;
+      return null
     },
     flatmaprResourceSelected: function (type, resource) {
-      this.resourceSelected(type, resource);
 
       if (resource.eventType === 'click' && resource.feature.type === 'feature') {
         const eventData = {
@@ -110,15 +74,13 @@ export default {
         });
       }
     },
-    flatmapReadyCall: function (flatmap) {
+    flatmapReadyCall: function () {
       this.flatmapReady = true;
-      let provClone = {id: this.entry.id, prov: this.getFlatmapImp().provenance}; //create clone of provenance and add id
-      const flatmapImp = flatmap.mapImp;
+      let provClone = {id: this.entry?.id, prov: null}; //create clone of provenance and add id
+      const flatmapImp = null
       EventBus.emit("mapImpProv", provClone); // send clone to context card
       this.$emit("flatmap-provenance-ready", provClone);
-      this.flatmapReadyForMarkerUpdates(flatmap);
       this.updateViewerSettings();
-      this.loadConnectivityExplorerConfig(flatmap);
       EventBus.emit("mapLoaded", flatmap);
     },
     onPathwaySelectionChanged: function (data) {
@@ -133,110 +95,43 @@ export default {
       });
     },
     onSidebarAnnotationClose: function() {
-      if (this.flatmapReady) {
-        const currentFlatmap = this.$refs.flatmap;
-        if (currentFlatmap) {
-          this.$refs.flatmap.annotationEventCallback({}, { type: 'aborted' })
-        }
-      }
+      return null;
     },
     highlightFeatures: function(info) {
-      let name = info.name;
-      const flatmap = this.$refs.flatmap.mapImp;
-      if (name) {
-        const results = flatmap.search(name);
-        if (results.featureIds[0]) {
-          flatmap.highlightFeatures([
-            flatmap.modelForFeature(results.featureIds[0]),
-          ]);
-        }
-      }
+      return null;
     },
     /**
      * Append the list of suggested terms to suggestions
      */
     searchSuggestions: function (term, suggestions) {
-      if (term && this.$refs.flatmap.mapImp) {
-        const results = this.$refs.flatmap.mapImp.search(term);
-        const featureIds = results.__featureIds || results.featureIds;
-        featureIds.forEach(id => {
-          const annotation = this.$refs.flatmap.mapImp.annotation(id);
-          if (annotation && annotation.label)
-            suggestions.push(annotation.label);
-        });
-      }
+      return null;
     },
     showConnectivity: function (payload) {
-      if (this?.alive) {
-        const { featureIds, offset } = payload;
-        const currentFlatmap = this.$refs.flatmap;
-        if (currentFlatmap) {
-          currentFlatmap.moveMap(featureIds, {
-            offsetX: offset ? -150 : 0,
-            zoom: 4,
-          });
-        }
-      }
+      return null;
     },
     showConnectivitiesByReference: function (payload) {
-      if (this?.alive) {
-        const currentFlatmap = this.$refs.flatmap;
-        if (currentFlatmap) {
-          currentFlatmap.showConnectivitiesByReference(payload);
-        }
-      }
+      return null;
     },
     zoomToFeatures: function(info, forceSelect) {
-      let name = info.name;
-      const flatmap = this.$refs.flatmap.mapImp;
-      if (name) {
-        const results = flatmap.search(name);
-        if (results.featureIds.length) {
-          let externalId = flatmap.modelForFeature(results.featureIds[0]);
-          if (externalId) {
-            if (forceSelect) {
-              flatmap.selectFeatures(externalId);
-            }
-            flatmap.zoomToFeatures(externalId);
-          } else flatmap.clearSearchResults();
-        }
-      } else {
-        flatmap.clearSearchResults();
-      }
+      return null;
     },
     changeViewingMode: function (modeName) {
-      this.$refs.flatmap.changeViewingMode(modeName);
+      return null;
     },
     updateViewerSettings: function () {
-      const {
-        backgroundDisplay,
-        viewingMode,
-        flightPathDisplay,
-        organsDisplay,
-        outlinesDisplay,
-      } = this.settingsStore.globalSettings;
-
-      const currentFlatmap = this.$refs.flatmap;
-
-      currentFlatmap.changeViewingMode(viewingMode);
-      currentFlatmap.setFlightPath3D(flightPathDisplay);
-      currentFlatmap.setColour(organsDisplay);
-      currentFlatmap.setOutlines(outlinesDisplay);
-      currentFlatmap.backgroundChangeCallback(backgroundDisplay);
+      return null;
     },
     setVisibilityFilter: function (payload) {
-      if (this?.alive) {
-        const currentFlatmap = this.$refs.flatmap;
-        if (currentFlatmap) {
-          currentFlatmap.setVisibilityFilter(payload);
-        }
-      }
+      return null;
     },
   },
   computed: {
     facetSpecies() {
-      return this.settingsStore.facets.species;
+      return 'pig'
     },
+  },
+  onMounted() {
+    this.flatmapReadyCall()
   },
 };
 </script>

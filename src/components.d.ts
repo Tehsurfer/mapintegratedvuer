@@ -52,6 +52,7 @@ declare module 'vue' {
     Simulation: typeof import('./components/viewers/Simulation.vue')['default']
     SplitDialog: typeof import('./components/SplitDialog.vue')['default']
     SplitFlow: typeof import('./components/SplitFlow.vue')['default']
+    StaticFlatmap: typeof import('./components/viewers/StaticFlatmap.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
