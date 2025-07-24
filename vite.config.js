@@ -42,6 +42,9 @@ export default defineConfig(({ command, mode }) => {
     config.server = {
       port: 8081,
     };
+    config.preview = {
+      allowedHosts: true
+    };
     config.define = {
       "process.env.HTTP_PROXY": 8081,
       global: "globalThis",
