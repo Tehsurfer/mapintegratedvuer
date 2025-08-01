@@ -1,9 +1,14 @@
 <template>
   <div class="viewer-container">
     <div class="map-selector-container">
+    
+      <div class="select-label">
+        Select Body System:
+      </div>
+
       <el-select 
         v-model="selectedMap" 
-        placeholder="Select a map" 
+        placeholder="Body System" 
         @change="onMapSelectionChange"
         style="width: 200px"
       >
@@ -14,6 +19,23 @@
           :value="option.value"
         />
       </el-select>
+
+      <div class="quiz-controls">
+        <el-button 
+          @click="toggleQuiz"
+          :type="showQuiz ? 'primary' : 'default'"
+        >
+          {{ showQuiz ? '❌ Hide Quiz' : '📝 Take Health Quiz' }}
+        </el-button>
+        
+        <el-button 
+          @click="clearHealthDataFromStorage"
+          type="warning"
+          size="small"
+        >
+          🔄 Reset Health Data
+        </el-button>
+      </div>
     </div>
     
     <div class="map-display-area">
@@ -21,19 +43,40 @@
         Please select a body system to display
       </div>
       <div v-else class="image-container">
-        <img 
+        <object v-if="isSVGFile"
+          :data="selectedMapImage"
+          type="image/svg+xml"
+          class="system-image svg-object"
+          ref="svgObject"
+          @load="onSVGLoad"
+        >
+          <!-- Fallback for browsers that don't support object tag -->
+          <img :src="selectedMapImage" :alt="`${selectedMapLabel} diagram`" class="system-image" />
+        </object>
+        
+        <img v-else
           :src="selectedMapImage" 
           :alt="`${selectedMapLabel} diagram`"
           @error="onImageError"
           @load="onImageLoad"
           class="system-image"
         />
+        
         <div v-if="imageError" class="error-message">
           Image not found for {{ selectedMapLabel }}
           <br>
           <small>Expected: {{ selectedMapImage }}</small>
         </div>
       </div>
+    </div>
+
+    <!-- Health Quiz Component -->
+    <div v-if="showQuiz" class="quiz-container">
+      <HealthQuiz 
+        @health-data-updated="onHealthDataUpdated"
+        @health-data-loaded="onHealthDataLoaded"
+        @quiz-completed="onQuizCompleted"
+      />
     </div>
 
     <HelpModeDialog
@@ -61,6 +104,7 @@ import {
 import DyncamicMarkerMixin from "../../mixins/DynamicMarkerMixin";
 
 import YellowStar from "../../icons/yellowstar";
+import HealthQuiz from "../HealthQuiz.vue";
 
 import { MultiFlatmapVuer } from "@abi-software/flatmapvuer";
 import "@abi-software/flatmapvuer/dist/style.css";
@@ -91,6 +135,7 @@ export default {
   components: {
     MultiFlatmapVuer,
     HelpModeDialog,
+    HealthQuiz,
   },
   data: function () {
     return {
@@ -100,9 +145,21 @@ export default {
       scaffoldResource: { },
       showStarInLegend: false,
       openMapOptions: getOpenMapOptions("Human Male"),
-      selectedMap: '',
+      selectedMap: 'full-body', // Default to full-body on page load
       imageError: false,
+      showQuiz: false,
+      // Health percentages for each organ (constants for now)
+      organHealthData: {
+        'brain': { health: 95, x: 150, y: 80 },
+        'heart': { health: 87, x: 150, y: 180 },
+        'lungs': { health: 92, x: 150, y: 150 },
+        'liver': { health: 78, x: 140, y: 230 },
+        'stomach': { health: 83, x: 170, y: 260 },
+        'intestine-small': { health: 89, x: 130, y: 330 },
+        'intestine-large': { health: 76, x: 150, y: 345 }
+      },
       mapOptions: [
+        { value: 'full-body', label: 'Full Body', image: '/body-system-images/full-body.svg' },
         { value: 'digestive', label: 'Digestive System', image: '/body-system-images/digestive.png'},
         { value: 'respiratory', label: 'Respiratory System', image: '/body-system-images/respiratory.png'},
         { value: 'lymphatic', label: 'Lymphatic System', image: '/body-system-images/lymphatic.png'},
@@ -290,6 +347,285 @@ export default {
       this.imageError = false;
       console.log(`Image loaded successfully: ${this.selectedMapImage}`);
     },
+    onSVGLoad: function() {
+      this.imageError = false;
+      console.log(`SVG loaded successfully: ${this.selectedMapImage}`);
+      
+      // Load any saved health data first
+      this.loadHealthDataFromStorage();
+      
+      // Set up click handlers for SVG
+      this.setupSVGClickHandlers();
+    },
+    setupSVGClickHandlers: function() {
+      this.$nextTick(() => {
+        const svgObject = this.$refs.svgObject;
+        if (!svgObject) return;
+
+        // Wait a bit for the SVG to fully load
+        setTimeout(() => {
+          const svgDoc = svgObject.contentDocument;
+          
+          if (svgDoc) {
+            // Add click handlers for each organ class
+            const organClasses = ['brain', 'heart', 'lungs', 'liver', 'stomach', 'intestine-small', 'intestine-large'];
+            
+            organClasses.forEach(className => {
+              const elements = svgDoc.querySelectorAll(`.${className}`);
+              elements.forEach((element, index) => {
+                element.style.cursor = 'pointer';
+                element.addEventListener('click', () => {
+                  this.onOrganClick(className, this.getOrganName(className, index));
+                });
+                
+                // Add hover effects
+                element.addEventListener('mouseenter', () => {
+                  element.style.strokeWidth = '3';
+                  element.style.filter = 'brightness(1.1)';
+                });
+                
+                element.addEventListener('mouseleave', () => {
+                  element.style.strokeWidth = '1';
+                  element.style.filter = 'none';
+                });
+              });
+            });
+
+            // Add health percentage text overlays
+            this.addHealthPercentageOverlays(svgDoc);
+          } else {
+            console.warn('Could not access SVG document');
+          }
+        }, 100);
+      });
+    },
+    addHealthPercentageOverlays: function(svgDoc) {
+      // Create a group for health overlays
+      const overlayGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+      overlayGroup.setAttribute('id', 'health-overlays');
+      
+      Object.keys(this.organHealthData).forEach(organClass => {
+        const healthData = this.organHealthData[organClass];
+        const organElements = svgDoc.querySelectorAll(`.${organClass}`);
+        
+        if (organElements.length > 0) {
+          // Create background circle for the percentage
+          const bgCircle = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          bgCircle.setAttribute('cx', healthData.x);
+          bgCircle.setAttribute('cy', healthData.y);
+          bgCircle.setAttribute('r', '18');
+          bgCircle.setAttribute('fill', 'rgba(255, 255, 255, 0.9)');
+          bgCircle.setAttribute('stroke', '#333');
+          bgCircle.setAttribute('stroke-width', '1');
+          bgCircle.style.cursor = 'pointer';
+          
+          // Create text element for the percentage
+          const textElement = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'text');
+          textElement.setAttribute('x', healthData.x);
+          textElement.setAttribute('y', healthData.y + 4); // Offset for center alignment
+          textElement.setAttribute('text-anchor', 'middle');
+          textElement.setAttribute('font-family', 'Arial, sans-serif');
+          textElement.setAttribute('font-size', '12');
+          textElement.setAttribute('font-weight', 'bold');
+          textElement.setAttribute('fill', this.getHealthColor(healthData.health));
+          textElement.textContent = `${healthData.health}%`;
+          textElement.style.cursor = 'pointer';
+          textElement.style.pointerEvents = 'none'; // Let clicks pass through to background
+          
+          // Add click handler to the background circle
+          bgCircle.addEventListener('click', () => {
+            this.onHealthPercentageClick(organClass, healthData.health);
+          });
+          
+          overlayGroup.appendChild(bgCircle);
+          overlayGroup.appendChild(textElement);
+        }
+      });
+      
+      // Add the overlay group to the SVG
+      const svgRoot = svgDoc.querySelector('svg');
+      if (svgRoot) {
+        svgRoot.appendChild(overlayGroup);
+      }
+    },
+    getHealthColor: function(percentage) {
+      if (percentage >= 90) return '#22c55e'; // Green
+      if (percentage >= 75) return '#f59e0b'; // Yellow/Orange
+      if (percentage >= 60) return '#f97316'; // Orange
+      return '#ef4444'; // Red
+    },
+    onHealthPercentageClick: function(organClass, healthPercentage) {
+      console.log(`Clicked on ${organClass} health: ${healthPercentage}%`);
+      
+      // Emit an event for health percentage clicks
+      this.$emit('health-clicked', {
+        organ: organClass,
+        health: healthPercentage,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Optional: Track analytics for health clicks
+      if (Tagging && Tagging.sendEvent) {
+        Tagging.sendEvent({
+          'event': 'interaction_event',
+          'event_name': 'portal_health_percentage_click',
+          'category': `${organClass}_${healthPercentage}%`,
+          'location': 'health_overlay'
+        });
+      }
+    },
+    toggleQuiz: function() {
+      this.showQuiz = !this.showQuiz;
+    },
+    onHealthDataUpdated: function(healthData) {
+      // Update organ health data with quiz results
+      Object.keys(healthData).forEach(organ => {
+        if (this.organHealthData[organ]) {
+          this.organHealthData[organ].health = healthData[organ];
+        }
+      });
+      
+      // Always refresh the health overlays when data is updated
+      this.$nextTick(() => {
+        if (this.isSVGFile && this.$refs.svgObject) {
+          this.refreshHealthOverlays();
+        }
+      });
+      
+      console.log('Health data updated:', healthData);
+    },
+    onHealthDataLoaded: function(healthData) {
+      // Load saved health data from local storage
+      Object.keys(healthData).forEach(organ => {
+        if (this.organHealthData[organ]) {
+          this.organHealthData[organ].health = healthData[organ];
+        }
+      });
+      
+      // Always refresh the health overlays when data is loaded
+      this.$nextTick(() => {
+        if (this.isSVGFile && this.$refs.svgObject) {
+          this.refreshHealthOverlays();
+        }
+      });
+      
+      console.log('Health data loaded from storage:', healthData);
+    },
+    onQuizCompleted: function(quizData) {
+      console.log('Quiz completed:', quizData);
+      
+      // Optional: Track quiz completion
+      if (Tagging && Tagging.sendEvent) {
+        Tagging.sendEvent({
+          'event': 'interaction_event',
+          'event_name': 'portal_health_quiz_completed',
+          'category': 'health_assessment',
+          'location': 'health_quiz'
+        });
+      }
+      
+      // Emit event for parent components
+      this.$emit('quiz-completed', quizData);
+    },
+    refreshHealthOverlays: function() {
+      this.$nextTick(() => {
+        const svgObject = this.$refs.svgObject;
+        if (!svgObject) return;
+
+        setTimeout(() => {
+          const svgDoc = svgObject.contentDocument;
+          if (svgDoc) {
+            // Remove existing overlays
+            const existingOverlays = svgDoc.getElementById('health-overlays');
+            if (existingOverlays) {
+              existingOverlays.remove();
+            }
+            
+            // Add updated overlays with new health data
+            this.addHealthPercentageOverlays(svgDoc);
+            console.log('Health overlays refreshed with updated data');
+          }
+        }, 100);
+      });
+    },
+    loadHealthDataFromStorage: function() {
+      try {
+        const savedData = localStorage.getItem('healthQuizResults');
+        if (savedData) {
+          const healthData = JSON.parse(savedData);
+          if (healthData.organHealth) {
+            // Update organ health data with saved results
+            Object.keys(healthData.organHealth).forEach(organ => {
+              if (this.organHealthData[organ]) {
+                this.organHealthData[organ].health = healthData.organHealth[organ];
+              }
+            });
+            
+            console.log('Loaded health data from storage on mount:', healthData.organHealth);
+            return healthData.organHealth;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load health data from storage:', error);
+      }
+      return null;
+    },
+    clearHealthDataFromStorage: function() {
+      try {
+        localStorage.removeItem('healthQuizResults');
+        
+        // Reset to default health values
+        this.organHealthData = {
+          'brain': { health: 95, x: 150, y: 80 },
+          'heart': { health: 87, x: 150, y: 180 },
+          'lungs': { health: 92, x: 150, y: 150 },
+          'liver': { health: 78, x: 140, y: 230 },
+          'stomach': { health: 83, x: 170, y: 260 },
+          'intestine-small': { health: 89, x: 130, y: 330 },
+          'intestine-large': { health: 76, x: 150, y: 345 }
+        };
+        
+        // Refresh overlays if SVG is loaded
+        if (this.isSVGFile && this.$refs.svgObject) {
+          this.refreshHealthOverlays();
+        }
+        
+        console.log('Health data cleared from storage and reset to defaults');
+      } catch (error) {
+        console.error('Failed to clear health data from storage:', error);
+      }
+    },
+    getOrganName: function(className, index) {
+      const organNames = {
+        'brain': 'Brain',
+        'heart': 'Heart',
+        'lungs': index === 0 ? 'Left Lung' : 'Right Lung',
+        'liver': 'Liver',
+        'stomach': 'Stomach',
+        'intestine-small': 'Small Intestine',
+        'intestine-large': 'Large Intestine'
+      };
+      return organNames[className] || className;
+    },
+    onOrganClick: function(organId, organName) {
+      console.log(`Clicked on ${organName} (${organId})`);
+      
+      const eventData = {
+        label: organName|| '',
+        id: "UBERON:0000948" || '',
+        featureId: "UBERON:0000948" || '',
+        taxonomy: "NCBITaxon:9606" || '',
+        resources: ""
+      };
+      const paramString = transformObjToString(eventData);
+      // `transformStringToObj` function can be used to change it back to object
+      Tagging.sendEvent({
+        'event': 'interaction_event',
+        'event_name': 'portal_maps_connectivity',
+        'category': paramString,
+        "location": ""
+      });
+    },
   },
   computed: {
     facetSpecies() {
@@ -305,6 +641,9 @@ export default {
     selectedMapLabel() {
       const option = this.mapOptions.find(opt => opt.value === this.selectedMap);
       return option ? option.label : this.selectedMap;
+    },
+    isSVGFile() {
+      return this.selectedMapImage.toLowerCase().endsWith('.svg');
     }
   },
   watch: {
@@ -315,7 +654,10 @@ export default {
     },
   },
   mounted: function () {
-    this.multiFlatmapReady()
+    this.multiFlatmapReady();
+    
+    // Load saved health data from local storage
+    this.loadHealthDataFromStorage();
   },
 };
 </script>
@@ -332,10 +674,26 @@ export default {
 
 .map-selector-container {
   padding: 16px;
-
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.select-label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.quiz-controls {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .map-display-area {
@@ -370,6 +728,11 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.svg-object {
+  border: none;
+  outline: none;
+}
+
 .error-message {
   text-align: center;
   color: #e74c3c;
@@ -379,6 +742,12 @@ export default {
     color: #666;
     font-size: 12px;
   }
+}
+
+.quiz-container {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  padding: 20px;
 }
 
 :deep(.maplibregl-popup) {
