@@ -87,6 +87,9 @@
       @show-next="onHelpModeShowNext"
       @finish-help-mode="onFinishHelpMode"
     />
+    
+    <!-- Chatbase GPT Widget -->
+    <div id="chatbase-widget" ref="chatbaseWidget"></div>
   </div>
 </template>
 
@@ -595,6 +598,38 @@ export default {
         console.error('Failed to clear health data from storage:', error);
       }
     },
+    initializeChatbase: function() {
+      // Initialize Chatbase GPT widget
+      if (!window.chatbase || window.chatbase("getState") !== "initialized") {
+        window.chatbase = (...args) => {
+          if (!window.chatbase.q) {
+            window.chatbase.q = [];
+          }
+          window.chatbase.q.push(args);
+        };
+        
+        window.chatbase = new Proxy(window.chatbase, {
+          get(target, prop) {
+            if (prop === "q") {
+              return target.q;
+            }
+            return (...args) => target(prop, ...args);
+          }
+        });
+      }
+      
+      // Load the Chatbase script
+      const script = document.createElement("script");
+      script.src = "https://www.chatbase.co/embed.min.js";
+      script.id = "MdW4jU0fFrfgF7QWDZFZs";
+      script.domain = "www.chatbase.co";
+      script.defer = true;
+      
+      // Add to head instead of body for better performance
+      document.head.appendChild(script);
+      
+      console.log('Chatbase GPT widget initialized');
+    },
     getOrganName: function(className, index) {
       const organNames = {
         'brain': 'Brain',
@@ -658,6 +693,11 @@ export default {
     
     // Load saved health data from local storage
     this.loadHealthDataFromStorage();
+    
+    // Initialize Chatbase GPT widget
+    this.$nextTick(() => {
+      this.initializeChatbase();
+    });
   },
 };
 </script>
