@@ -35,6 +35,81 @@
         >
           🔄 Reset Health Data
         </el-button>
+
+        <el-popover
+          placement="bottom"
+          :teleported="false"
+          trigger="manual"
+          :width="400"
+          :offset="0"
+          popper-class="funding-popover"
+          :visible="fundingPopupVisible"
+        >
+          <template #default>
+            <div class="funding-content">
+              <h3 class="funding-title">Support Our Research</h3>
+              <div class="funding-links">
+                <div class="funding-item">
+                  <a href="https://donate.stripe.com/8x214n9Pq834cUS30T1Nu04" 
+                     class="funding-button subscription-button"
+                     target="_blank"
+                     rel="noopener noreferrer">
+                    Subscribe to BPA Research
+                  </a>
+                </div>
+                <div class="funding-item">
+                  <a href="https://buy.stripe.com/aFa9ATbXy6Z08EC1WP1Nu03" 
+                     class="funding-button support-button"
+                     target="_blank"
+                     rel="noopener noreferrer">
+                    Support to Trace BPA in Food
+                  </a>
+                </div>
+                <div class="funding-item">
+                  <a href="https://donate.stripe.com/4gM5kD8Lmers9IGgRJ1Nu05" 
+                     class="funding-button subscription-button"
+                     target="_blank"
+                     rel="noopener noreferrer">
+                    Subscribe to PFAS Research
+                  </a>
+                </div>
+                <div class="funding-item">
+                  <a href="https://buy.stripe.com/7sYdR92mY1EGbQO0SL1Nu06" 
+                     class="funding-button support-button"
+                     target="_blank"
+                     rel="noopener noreferrer">
+                    Support to Trace PFAS in Food
+                  </a>
+                </div>
+                <div class="funding-item">
+                  <a href="https://donate.stripe.com/9B65kD5zaabc3kiatl1Nu08" 
+                     class="funding-button subscription-button"
+                     target="_blank"
+                     rel="noopener noreferrer">
+                    Subscribe to Phthalates Research
+                  </a>
+                </div>
+                <div class="funding-item">
+                  <a href="https://buy.stripe.com/5kQeVd0eQcjk6wubxp1Nu07" 
+                     class="funding-button support-button"
+                     target="_blank"
+                     rel="noopener noreferrer">
+                    Support to Trace Phthalates in Food
+                  </a>
+                </div>
+              </div>
+            </div>
+          </template>
+          <template #reference>
+            <el-button 
+              @click="toggleFundingPopup"
+              type="danger"
+              size="small"
+            >
+              ❤️ Support Research
+            </el-button>
+          </template>
+        </el-popover>
       </div>
     </div>
     
@@ -151,6 +226,7 @@ export default {
       selectedMap: 'full-body', // Default to full-body on page load
       imageError: false,
       showQuiz: false,
+      fundingPopupVisible: false,
       // Health percentages for each organ (constants for now)
       organHealthData: {
         'brain': { health: 95, x: 150, y: 80 },
@@ -480,6 +556,13 @@ export default {
     toggleQuiz: function() {
       this.showQuiz = !this.showQuiz;
     },
+    toggleFundingPopup: function() {
+      this.fundingPopupVisible = !this.fundingPopupVisible;
+      // Close quiz when opening funding popup for better UX
+      if (this.fundingPopupVisible) {
+        this.showQuiz = false;
+      }
+    },
     onHealthDataUpdated: function(healthData) {
       // Update organ health data with quiz results
       Object.keys(healthData).forEach(organ => {
@@ -806,6 +889,72 @@ export default {
     div {
       scale: 0.5;
       width: 0;
+    }
+  }
+}
+
+:deep(.funding-popover.el-popover.el-popper) {
+  padding: 20px;
+  background: #fff!important;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.funding-content {
+  .funding-title {
+    margin: 0 0 16px 0;
+    color: #333;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .funding-links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .funding-item {
+    display: flex;
+    justify-content: center;
+  }
+
+  .funding-button {
+    display: inline-block;
+    color: white;
+    padding: 12px 20px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    min-width: 200px;
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      text-decoration: none;
+      color: white;
+    }
+    
+    &.subscription-button {
+      background-color: #003366;
+      
+      &:hover {
+        background-color: #004488;
+      }
+    }
+    
+    &.support-button {
+      background-color: #0B3D91;
+      
+      &:hover {
+        background-color: #0D4BA3;
+      }
     }
   }
 }
