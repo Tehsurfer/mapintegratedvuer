@@ -29,6 +29,13 @@
         </el-button>
         
         <el-button 
+          @click="toggleDetoxPlan"
+          :type="showDetoxPlan ? 'primary' : 'default'"
+        >
+          {{ showDetoxPlan ? '❌ Hide Plan' : '🌿 My Detox Plan' }}
+        </el-button>
+        
+        <el-button 
           @click="clearHealthDataFromStorage"
           type="warning"
           size="small"
@@ -145,14 +152,49 @@
       </div>
     </div>
 
-    <!-- Health Quiz Component -->
-    <div v-if="showQuiz" class="quiz-container">
+    <!-- Health Quiz Component in Dialog -->
+    <el-dialog
+      v-model="showQuiz"
+      title="🏥 Health Assessment Quiz"
+      width="90%"
+      :close-on-click-modal="false"
+      :close-on-press-escape="true"
+      append-to-body
+      class="health-quiz-dialog"
+    >
       <HealthQuiz 
         @health-data-updated="onHealthDataUpdated"
         @health-data-loaded="onHealthDataLoaded"
         @quiz-completed="onQuizCompleted"
       />
-    </div>
+      
+      <template #footer>
+        <el-button @click="showQuiz = false" type="info">
+          ✕ Close Quiz
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- My Detox Plan Component in Dialog -->
+    <el-dialog
+      v-model="showDetoxPlan"
+      title="🌿 My Detox Plan"
+      width="95%"
+      :close-on-click-modal="false"
+      :close-on-press-escape="true"
+      append-to-body
+      class="detox-plan-dialog"
+    >
+      <MyDetoxPlan 
+        @toxins-selected="onToxinsSelected"
+      />
+      
+      <template #footer>
+        <el-button @click="showDetoxPlan = false" type="info">
+          ✕ Close Detox Plan
+        </el-button>
+      </template>
+    </el-dialog>
 
     <HelpModeDialog
       v-if="helpMode && useHelpModeDialog"
@@ -183,6 +225,7 @@ import DyncamicMarkerMixin from "../../mixins/DynamicMarkerMixin";
 
 import YellowStar from "../../icons/yellowstar";
 import HealthQuiz from "../HealthQuiz.vue";
+import MyDetoxPlan from "../MyDetoxPlan.vue";
 
 import { MultiFlatmapVuer } from "@abi-software/flatmapvuer";
 import "@abi-software/flatmapvuer/dist/style.css";
@@ -214,6 +257,7 @@ export default {
     MultiFlatmapVuer,
     HelpModeDialog,
     HealthQuiz,
+    MyDetoxPlan,
   },
   data: function () {
     return {
@@ -226,6 +270,7 @@ export default {
       selectedMap: 'full-body', // Default to full-body on page load
       imageError: false,
       showQuiz: false,
+      showDetoxPlan: false,
       fundingPopupVisible: false,
       // Health percentages for each organ (constants for now)
       organHealthData: {
@@ -555,12 +600,48 @@ export default {
     },
     toggleQuiz: function() {
       this.showQuiz = !this.showQuiz;
+      
+      // Close funding popup and detox plan if quiz is being opened
+      if (this.showQuiz) {
+        this.fundingPopupVisible = false;
+        this.showDetoxPlan = false;
+      }
+      
+      // Track quiz dialog opening/closing
+      if (Tagging && Tagging.sendEvent) {
+        Tagging.sendEvent({
+          'event': 'interaction_event',
+          'event_name': this.showQuiz ? 'portal_health_quiz_opened' : 'portal_health_quiz_closed',
+          'category': 'health_assessment_dialog',
+          'location': 'quiz_toggle_button'
+        });
+      }
+    },
+    toggleDetoxPlan: function() {
+      this.showDetoxPlan = !this.showDetoxPlan;
+      
+      // Close quiz and funding popup if detox plan is being opened
+      if (this.showDetoxPlan) {
+        this.showQuiz = false;
+        this.fundingPopupVisible = false;
+      }
+      
+      // Track detox plan dialog opening/closing
+      if (Tagging && Tagging.sendEvent) {
+        Tagging.sendEvent({
+          'event': 'interaction_event',
+          'event_name': this.showDetoxPlan ? 'portal_detox_plan_opened' : 'portal_detox_plan_closed',
+          'category': 'detox_plan_dialog',
+          'location': 'detox_plan_toggle_button'
+        });
+      }
     },
     toggleFundingPopup: function() {
       this.fundingPopupVisible = !this.fundingPopupVisible;
-      // Close quiz when opening funding popup for better UX
+      // Close quiz and detox plan when opening funding popup for better UX
       if (this.fundingPopupVisible) {
         this.showQuiz = false;
+        this.showDetoxPlan = false;
       }
     },
     onHealthDataUpdated: function(healthData) {
@@ -867,10 +948,138 @@ export default {
   }
 }
 
-.quiz-container {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-  padding: 20px;
+:deep(.health-quiz-dialog) {
+  .el-dialog {
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+  
+  .el-dialog__header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    padding: 20px 24px;
+    
+    .el-dialog__title {
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
+    }
+    
+    .el-dialog__headerbtn {
+      .el-dialog__close {
+        color: white;
+        font-size: 18px;
+        
+        &:hover {
+          color: #f0f0f0;
+        }
+      }
+    }
+  }
+  
+  .el-dialog__body {
+    padding: 24px;
+    max-height: 70vh;
+    overflow-y: auto;
+    
+    /* Custom scrollbar */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+  
+  .el-dialog__footer {
+    padding: 16px 24px;
+    background-color: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+    border-top: 1px solid #e9ecef;
+    text-align: center;
+  }
+}
+
+// Detox Plan Dialog Styles
+:deep(.detox-plan-dialog) {
+  .el-dialog {
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+  
+  .el-dialog__header {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    padding: 20px 24px;
+    
+    .el-dialog__title {
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
+    }
+    
+    .el-dialog__headerbtn {
+      .el-dialog__close {
+        color: white;
+        font-size: 18px;
+        
+        &:hover {
+          color: #f0f0f0;
+        }
+      }
+    }
+  }
+  
+  .el-dialog__body {
+    padding: 0; // Let the component handle its own padding
+    max-height: 75vh;
+    overflow-y: auto;
+    
+    /* Custom scrollbar */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+      
+      &:hover {
+        background: #a8a8a8;
+      }
+    }
+  }
+  
+  .el-dialog__footer {
+    padding: 16px 24px;
+    background-color: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+    border-top: 1px solid #e9ecef;
+    text-align: center;
+  }
+}
+
+// Make sure the dialog appears above other elements
+:deep(.el-overlay-dialog) {
+  z-index: 2000;
 }
 
 :deep(.maplibregl-popup) {
