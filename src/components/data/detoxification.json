@@ -1,5 +1,7 @@
 
 {
+  "category": "Detoxification",
+  "description": "A comprehensive guide to detoxifying common environmental toxins with evidence-based strategies.",
   "toxins": [
     {
       "name": "BPA",
